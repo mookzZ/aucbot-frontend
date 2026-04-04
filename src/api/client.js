@@ -24,7 +24,7 @@ export const api = {
   setRegion: (region) => request('POST', '/users/me', { region }),
   searchItems: (q) => request('GET', `/items/search?q=${encodeURIComponent(q)}`),
   getLots: (itemId) => request('GET', `/auction/${itemId}/lots`),
-  getHistory: (itemId) => request('GET', `/auction/${itemId}/history`),
+  getHistory: (itemId) => request('GET', `/auction/${itemId}/history?limit=200`),
   getAlerts: () => request('GET', '/alerts'),
   createAlert: (item_id, price_limit, qlt) => request('POST', '/alerts', { item_id, price_limit, qlt }),
   deleteAlert: (id) => request('DELETE', `/alerts/${id}`),
