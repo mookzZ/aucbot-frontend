@@ -2,13 +2,12 @@ import { useCallback, useRef, useState } from 'react'
 import { api } from '../api/client'
 
 export const QLT = {
-  0: { label: 'Все', color: 'var(--text-2)' },
-  1: { label: 'Обычный', color: '#9e9e9e' },
-  2: { label: 'Необычный', color: '#4caf50' },
-  3: { label: 'Особый', color: '#2196f3' },
-  4: { label: 'Редкий', color: '#9c27b0' },
-  5: { label: 'Исключительный', color: '#ff5722' },
-  6: { label: 'Легендарный', color: '#ffc107' },
+  0: { label: 'Обычный', color: '#9e9e9e' },
+  1: { label: 'Необычный', color: '#4caf50' },
+  2: { label: 'Особый', color: '#2196f3' },
+  3: { label: 'Редкий', color: '#9c27b0' },
+  4: { label: 'Исключительный', color: '#ff5722' },
+  5: { label: 'Легендарный', color: '#ffc107' },
 }
 
 function formatPrice(n) {
@@ -85,24 +84,30 @@ function PriceChart({ prices }) {
 
 function QltFilter({ value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
-      {Object.entries(QLT).map(([k, { label, color }]) => {
-        const active = value === Number(k)
-        return (
-          <button key={k} onClick={() => onChange(Number(k))} style={{
-            flexShrink: 0, padding: '5px 10px',
-            background: 'transparent',
-            border: `1px solid ${active ? color : 'var(--border)'}`,
-            borderRadius: '20px',
-            color: active ? color : 'var(--text-3)',
-            fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
-            boxShadow: active ? `0 0 8px ${color}40` : 'none',
-          }}>
-            {label}
-          </button>
-        )
-      })}
-    </div>
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+        <button onClick={() => onChange(null)} style={{
+          flexShrink: 0, padding: '5px 10px',
+          background: 'transparent',
+          border: `1px solid ${value === null ? 'var(--text-2)' : 'var(--border)'}`,
+          borderRadius: '20px',
+          color: value === null ? 'var(--text-2)' : 'var(--text-3)',
+          fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
+        }}>Все</button>
+        {Object.entries(QLT).map(([k, { label, color }]) => {
+          const active = value === Number(k)
+          return (
+              <button key={k} onClick={() => onChange(Number(k))} style={{
+                flexShrink: 0, padding: '5px 10px',
+                background: 'transparent',
+                border: `1px solid ${active ? color : 'var(--border)'}`,
+                borderRadius: '20px',
+                color: active ? color : 'var(--text-3)',
+                fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
+                boxShadow: active ? `0 0 8px ${color}40` : 'none',
+              }}>{label}</button>
+          )
+        })}
+      </div>
   )
 }
 
@@ -155,9 +160,9 @@ export default function AuctionPage({ state, setState }) {
 
   const artifact = isArtifact(selectedItem)
   const allLots = lots?.lots ?? []
-  const filteredLots = qlt > 0 ? allLots.filter(l => l.additional?.qlt === qlt) : allLots
   const allHistory = history?.prices ?? []
-  const filteredHistory = qlt > 0 ? allHistory.filter(p => p.additional?.qlt === qlt) : allHistory
+  const filteredLots = qlt !== null ? allLots.filter(l => l.additional?.qlt === qlt) : allLots
+  const filteredHistory = qlt !== null ? allHistory.filter(p => p.additional?.qlt === qlt) : allHistory
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>

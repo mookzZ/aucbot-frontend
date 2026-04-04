@@ -16,7 +16,7 @@ export default function App() {
     lots: null,
     history: null,
     tab: 'lots',
-    qlt: 0, // 0 = all
+    qlt: null,
   })
 
   useEffect(() => {
