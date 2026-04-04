@@ -2,10 +2,6 @@ import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import { QLT } from './AuctionPage'
 
-function formatPrice(n) {
-  return n?.toLocaleString('ru-RU') ?? '—'
-}
-
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -59,7 +55,7 @@ export default function AlertsPage() {
         {!loading && alerts.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {alerts.map(alert => {
-              const qltInfo = alert.qlt ? QLT[alert.qlt] : null
+              const qltInfo = alert.qlt != null ? QLT[alert.qlt] : null
               return (
                 <div key={alert.id} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <img src={alert.icon_url} style={{ width: 40, height: 40, objectFit: 'contain', flexShrink: 0 }}
@@ -70,13 +66,21 @@ export default function AlertsPage() {
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{alert.item_id}</div>
                     <div style={{ display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                      {/* Price limit */}
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '3px 8px' }}>
                         <span style={{ fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.05em' }}>ЛИМИТ</span>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>{formatPrice(alert.price_limit)} ₽</span>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>{alert.price_limit?.toLocaleString('ru-RU')} ₽</span>
                       </div>
+                      {/* Quality */}
                       {qltInfo && (
                         <div style={{ display: 'inline-flex', alignItems: 'center', background: 'transparent', border: `1px solid ${qltInfo.color}50`, borderRadius: '4px', padding: '3px 8px' }}>
                           <span style={{ fontSize: '10px', fontWeight: 600, color: qltInfo.color }}>{qltInfo.label}</span>
+                        </div>
+                      )}
+                      {/* Ptn */}
+                      {alert.ptn_min != null && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', background: 'transparent', border: '1px solid var(--border-bright)', borderRadius: '4px', padding: '3px 8px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-2)' }}>+{alert.ptn_min}+</span>
                         </div>
                       )}
                     </div>

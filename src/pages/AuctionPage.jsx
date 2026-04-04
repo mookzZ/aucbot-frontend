@@ -12,9 +12,7 @@ export const QLT = {
 
 function formatPrice(n) {
   if (n == null) return '—'
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'М'
-  if (n >= 1_000) return (n / 1_000).toFixed(0) + 'К'
-  return n.toLocaleString('ru-RU')
+  return n.toLocaleString('ru-RU') + ' ₽'
 }
 
 function timeLeft(isoStr) {
@@ -30,48 +28,124 @@ function isArtifact(item) {
   return item?.category?.startsWith('artefact') || item?.category?.startsWith('artifact')
 }
 
+function getPtn(lot) {
+  return lot?.additional?.ptn ?? 0
+}
+
+// ── Chart with tooltip ───────────────────────────────────────────────────────
+
 function PriceChart({ prices }) {
+  const [tooltip, setTooltip] = useState(null)
+  const svgRef = useRef(null)
+
   if (!prices || prices.length < 2) return (
     <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: '32px', fontSize: '13px' }}>
       Недостаточно данных
     </div>
   )
+
   const values = prices.map(p => p.price).filter(Boolean)
   const min = Math.min(...values)
   const max = Math.max(...values)
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
   const range = max - min || 1
-  const W = 320, H = 110, PAD = 8
-  const pts = prices.map((p, i) => {
-    const x = PAD + (i / (prices.length - 1)) * (W - PAD * 2)
-    const y = PAD + (1 - (p.price - min) / range) * (H - PAD * 2)
-    return `${x},${y}`
-  }).join(' ')
+
+  const W = 400, H = 130, PAD = 12
+
+  const pts = prices.map((p, i) => ({
+    x: PAD + (i / (prices.length - 1)) * (W - PAD * 2),
+    y: PAD + (1 - (p.price - min) / range) * (H - PAD * 2),
+    price: p.price,
+    time: p.time,
+    qlt: p.additional?.qlt,
+    ptn: p.additional?.ptn,
+  }))
+
+  const polyline = pts.map(p => `${p.x},${p.y}`).join(' ')
+  const polygon = `${PAD},${H - PAD} ${polyline} ${W - PAD},${H - PAD}`
+
+  function handleMouseMove(e) {
+    const rect = svgRef.current.getBoundingClientRect()
+    const mx = (e.clientX - rect.left) * (W / rect.width)
+    let closest = pts[0], minDist = Infinity
+    for (const p of pts) {
+      const d = Math.abs(p.x - mx)
+      if (d < minDist) { minDist = d; closest = p }
+    }
+    setTooltip(closest)
+  }
 
   return (
     <div>
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
-        {[['МИН', formatPrice(min), 'var(--success)'], ['СРЕДНЕЕ', formatPrice(avg), 'var(--accent)'], ['МАКС', formatPrice(max), 'var(--danger)']].map(([label, value, color]) => (
+        {[['МИН', min, 'var(--success)'], ['СРЕДНЕЕ', avg, 'var(--accent)'], ['МАКС', max, 'var(--danger)']].map(([label, value, color]) => (
           <div key={label} style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '7px', padding: '10px 8px', textAlign: 'center' }}>
             <div style={{ fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.1em', marginBottom: '4px' }}>{label}</div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color }}>{value}</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color }}>{formatPrice(value)}</div>
           </div>
         ))}
       </div>
-      <div style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px' }}>
-        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+
+      {/* SVG */}
+      <div style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', position: 'relative' }}>
+        <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', cursor: 'crosshair' }}
+          onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
           <defs>
             <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.3"/>
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25"/>
               <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
             </linearGradient>
           </defs>
           {[0.25, 0.5, 0.75].map(t => (
             <line key={t} x1={PAD} y1={PAD + t * (H - PAD * 2)} x2={W - PAD} y2={PAD + t * (H - PAD * 2)} stroke="var(--border)" strokeWidth="1"/>
           ))}
-          <polygon points={`${PAD},${H - PAD} ${pts} ${W - PAD},${H - PAD}`} fill="url(#cg)"/>
-          <polyline points={pts} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
+          <polygon points={polygon} fill="url(#cg)"/>
+          <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
+
+          {/* Dots */}
+          {pts.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r={tooltip === p ? 4 : 2.5}
+              fill={tooltip === p ? 'var(--accent)' : 'var(--bg-4)'}
+              stroke="var(--accent)" strokeWidth="1.5"/>
+          ))}
+
+          {/* Vertical line at tooltip */}
+          {tooltip && (
+            <line x1={tooltip.x} y1={PAD} x2={tooltip.x} y2={H - PAD}
+              stroke="var(--accent)" strokeWidth="1" strokeDasharray="3,3" opacity="0.5"/>
+          )}
         </svg>
+
+        {/* Tooltip */}
+        {tooltip && (
+          <div style={{
+            position: 'absolute', top: '12px',
+            left: tooltip.x / W * 100 > 60 ? 'auto' : '50%',
+            right: tooltip.x / W * 100 > 60 ? '12px' : 'auto',
+            transform: tooltip.x / W * 100 > 60 ? 'none' : 'none',
+            background: 'var(--bg-2)', border: '1px solid var(--border-bright)',
+            borderRadius: '6px', padding: '8px 10px',
+            fontSize: '11px', lineHeight: '1.6', pointerEvents: 'none',
+            minWidth: '140px',
+          }}>
+            <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '2px' }}>
+              {formatPrice(tooltip.price)}
+            </div>
+            {tooltip.qlt != null && QLT[tooltip.qlt] && (
+              <div style={{ color: QLT[tooltip.qlt].color }}>
+                {QLT[tooltip.qlt].label}
+                {tooltip.ptn ? ` +${tooltip.ptn}` : ''}
+              </div>
+            )}
+            {tooltip.time && (
+              <div style={{ color: 'var(--text-3)' }}>
+                {new Date(tooltip.time).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-3)', marginTop: '6px' }}>
           <span>{prices[0]?.time ? new Date(prices[0].time).toLocaleDateString('ru-RU') : ''}</span>
           <span>{prices.length} сделок</span>
@@ -82,34 +156,34 @@ function PriceChart({ prices }) {
   )
 }
 
+// ── Quality Filter ───────────────────────────────────────────────────────────
+
 function QltFilter({ value, onChange }) {
   return (
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
-        <button onClick={() => onChange(null)} style={{
-          flexShrink: 0, padding: '5px 10px',
-          background: 'transparent',
-          border: `1px solid ${value === null ? 'var(--text-2)' : 'var(--border)'}`,
-          borderRadius: '20px',
-          color: value === null ? 'var(--text-2)' : 'var(--text-3)',
-          fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
-        }}>Все</button>
-        {Object.entries(QLT).map(([k, { label, color }]) => {
-          const active = value === Number(k)
-          return (
-              <button key={k} onClick={() => onChange(Number(k))} style={{
-                flexShrink: 0, padding: '5px 10px',
-                background: 'transparent',
-                border: `1px solid ${active ? color : 'var(--border)'}`,
-                borderRadius: '20px',
-                color: active ? color : 'var(--text-3)',
-                fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
-                boxShadow: active ? `0 0 8px ${color}40` : 'none',
-              }}>{label}</button>
-          )
-        })}
-      </div>
+    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', scrollbarWidth: 'none' }}>
+      <button onClick={() => onChange(null)} style={{
+        flexShrink: 0, padding: '4px 10px', background: 'transparent',
+        border: `1px solid ${value === null ? 'var(--text-2)' : 'var(--border)'}`,
+        borderRadius: '20px', color: value === null ? 'var(--text-2)' : 'var(--text-3)',
+        fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
+      }}>Все</button>
+      {Object.entries(QLT).map(([k, { label, color }]) => {
+        const active = value === Number(k)
+        return (
+          <button key={k} onClick={() => onChange(Number(k))} style={{
+            flexShrink: 0, padding: '4px 10px', background: 'transparent',
+            border: `1px solid ${active ? color : 'var(--border)'}`,
+            borderRadius: '20px', color: active ? color : 'var(--text-3)',
+            fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
+            boxShadow: active ? `0 0 8px ${color}40` : 'none',
+          }}>{label}</button>
+        )
+      })}
+    </div>
   )
 }
+
+// ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function AuctionPage({ state, setState }) {
   const { query, selectedItem, lots, history, tab, qlt } = state
@@ -117,9 +191,12 @@ export default function AuctionPage({ state, setState }) {
   const [loading, setLoading] = useState(false)
   const [alertModal, setAlertModal] = useState(false)
   const [alertPrice, setAlertPrice] = useState('')
-  const [alertQlt, setAlertQlt] = useState(0)
+  const [alertQlt, setAlertQlt] = useState(null)
+  const [alertPtn, setAlertPtn] = useState('')
   const [alertSaving, setAlertSaving] = useState(false)
   const [alertDone, setAlertDone] = useState(false)
+  const [sortOrder, setSortOrder] = useState('asc') // asc | desc
+  const [filterPtn, setFilterPtn] = useState(null) // null = any
   const searchTimeout = useRef(null)
 
   function update(patch) { setState(prev => ({ ...prev, ...patch })) }
@@ -150,19 +227,37 @@ export default function AuctionPage({ state, setState }) {
     if (!price || !selectedItem) return
     setAlertSaving(true)
     try {
-      await api.createAlert(selectedItem.id, price, alertQlt || null)
+      const ptn_min = alertPtn ? parseInt(alertPtn) : null
+      await api.createAlert(selectedItem.id, price, alertQlt, ptn_min)
       setAlertDone(true)
       setAlertModal(false)
       setAlertPrice('')
+      setAlertPtn('')
     } catch (e) { console.error(e) }
     finally { setAlertSaving(false) }
   }
 
   const artifact = isArtifact(selectedItem)
   const allLots = lots?.lots ?? []
+
+  // Filter
+  let filteredLots = qlt !== null ? allLots.filter(l => l.additional?.qlt === qlt) : allLots
+  if (filterPtn !== null) filteredLots = filteredLots.filter(l => getPtn(l) >= filterPtn)
+
+  // Sort
+  filteredLots = [...filteredLots].sort((a, b) => {
+    const pa = a.buyoutPrice || a.currentPrice || 0
+    const pb = b.buyoutPrice || b.currentPrice || 0
+    return sortOrder === 'asc' ? pa - pb : pb - pa
+  })
+
   const allHistory = history?.prices ?? []
-  const filteredLots = qlt !== null ? allLots.filter(l => l.additional?.qlt === qlt) : allLots
   const filteredHistory = qlt !== null ? allHistory.filter(p => p.additional?.qlt === qlt) : allHistory
+
+  // Available ptn values for filter
+  const availablePtns = artifact
+    ? [...new Set(allLots.map(l => getPtn(l)))].sort((a, b) => a - b)
+    : []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -170,12 +265,15 @@ export default function AuctionPage({ state, setState }) {
       {/* Search */}
       <div style={{ padding: '12px 16px 10px', borderBottom: '1px solid var(--border)', position: 'relative', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 14px' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
           <input value={query} onChange={e => search(e.target.value)} placeholder="Поиск предмета..."
             style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 0', color: 'var(--text)', fontSize: '14px', fontWeight: 500 }} />
           {query && <button onClick={() => { update({ query: '', selectedItem: null, lots: null, history: null }); setResults([]) }}
             style={{ background: 'none', color: 'var(--text-3)', fontSize: '18px', lineHeight: 1 }}>×</button>}
         </div>
+
         {results.length > 0 && (
           <div style={{ position: 'absolute', top: '100%', left: '16px', right: '16px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 100, maxHeight: '220px', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
             {results.map(item => (
@@ -204,9 +302,10 @@ export default function AuctionPage({ state, setState }) {
         )}
 
         {selectedItem && loading && (
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '40px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: '40px', gap: '12px', color: 'var(--text-3)' }}>
             <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <span style={{ fontSize: '12px' }}>Загрузка всех лотов...</span>
           </div>
         )}
 
@@ -225,16 +324,36 @@ export default function AuctionPage({ state, setState }) {
                 border: `1px solid ${alertDone ? 'var(--success)' : 'var(--accent)'}`,
                 borderRadius: '7px', padding: '8px 12px',
                 color: alertDone ? 'var(--success)' : 'var(--accent)',
-                fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em',
+                fontSize: '11px', fontWeight: 700,
               }}>
                 {alertDone ? '✓ АЛЕРТ' : '+ АЛЕРТ'}
               </button>
             </div>
 
-            {/* Quality filter */}
+            {/* Artifact filters */}
             {artifact && (
-              <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                 <QltFilter value={qlt} onChange={v => update({ qlt: v })} />
+
+                {/* Ptn filter */}
+                {availablePtns.length > 1 && (
+                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                    <button onClick={() => setFilterPtn(null)} style={{
+                      flexShrink: 0, padding: '4px 10px', background: 'transparent',
+                      border: `1px solid ${filterPtn === null ? 'var(--text-2)' : 'var(--border)'}`,
+                      borderRadius: '20px', color: filterPtn === null ? 'var(--text-2)' : 'var(--text-3)',
+                      fontSize: '11px', fontWeight: 600,
+                    }}>Любая +</button>
+                    {availablePtns.filter(p => p > 0).map(p => (
+                      <button key={p} onClick={() => setFilterPtn(p)} style={{
+                        flexShrink: 0, padding: '4px 10px', background: 'transparent',
+                        border: `1px solid ${filterPtn === p ? 'var(--accent)' : 'var(--border)'}`,
+                        borderRadius: '20px', color: filterPtn === p ? 'var(--accent)' : 'var(--text-3)',
+                        fontSize: '11px', fontWeight: 600,
+                      }}>+{p}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -245,8 +364,7 @@ export default function AuctionPage({ state, setState }) {
                   flex: 1, padding: '8px',
                   background: tab === key ? 'var(--bg-4)' : 'transparent',
                   border: tab === key ? '1px solid var(--border-bright)' : '1px solid transparent',
-                  borderRadius: '6px',
-                  color: tab === key ? 'var(--text)' : 'var(--text-3)',
+                  borderRadius: '6px', color: tab === key ? 'var(--text)' : 'var(--text-3)',
                   fontSize: '12px', fontWeight: 600, transition: 'all 0.15s',
                 }}>{label}</button>
               ))}
@@ -254,43 +372,64 @@ export default function AuctionPage({ state, setState }) {
 
             {/* Lots */}
             {tab === 'lots' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {filteredLots.length === 0 && (
-                  <div style={{ textAlign: 'center', color: 'var(--text-3)', paddingTop: '24px', fontSize: '13px' }}>
-                    Нет лотов{qlt > 0 ? ` (${QLT[qlt].label})` : ''}
+              <>
+                {/* Sort controls */}
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>
+                    {filteredLots.length} лотов
+                  </span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
+                    {[['asc', '↑ Дешевле'], ['desc', '↓ Дороже']].map(([val, label]) => (
+                      <button key={val} onClick={() => setSortOrder(val)} style={{
+                        padding: '4px 10px', background: 'transparent',
+                        border: `1px solid ${sortOrder === val ? 'var(--accent)' : 'var(--border)'}`,
+                        borderRadius: '6px', color: sortOrder === val ? 'var(--accent)' : 'var(--text-3)',
+                        fontSize: '11px', fontWeight: 600,
+                      }}>{label}</button>
+                    ))}
                   </div>
-                )}
-                {filteredLots.map((lot, i) => {
-                  const lotQlt = lot.additional?.qlt
-                  const qi = QLT[lotQlt]
-                  return (
-                    <div key={i} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 14px' }}>
-                      {artifact && qi && (
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: qi.color, marginBottom: '8px', letterSpacing: '0.08em' }}>
-                          {qi.label.toUpperCase()}
-                        </div>
-                      )}
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                        <div>
-                          <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ТЕКУЩАЯ</div>
-                          <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '14px' }}>{formatPrice(lot.currentPrice)} ₽</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ВЫКУП</div>
-                          <div style={{ fontWeight: 600, fontSize: '13px' }}>{formatPrice(lot.buyoutPrice)} ₽</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ОСТАЛОСЬ</div>
-                          <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-2)' }}>{timeLeft(lot.endTime)}</div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {filteredLots.length === 0 && (
+                    <div style={{ textAlign: 'center', color: 'var(--text-3)', paddingTop: '24px', fontSize: '13px' }}>
+                      Нет лотов
+                    </div>
+                  )}
+                  {filteredLots.map((lot, i) => {
+                    const lotQlt = lot.additional?.qlt
+                    const lotPtn = getPtn(lot)
+                    const qi = QLT[lotQlt]
+                    return (
+                      <div key={i} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 14px' }}>
+                        {artifact && (
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                            {qi && <span style={{ fontSize: '10px', fontWeight: 700, color: qi.color, letterSpacing: '0.08em' }}>{qi.label.toUpperCase()}</span>}
+                            {lotPtn > 0 && <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '1px 6px' }}>+{lotPtn}</span>}
+                          </div>
+                        )}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                          <div>
+                            <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ТЕКУЩАЯ</div>
+                            <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '13px' }}>{formatPrice(lot.currentPrice)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ВЫКУП</div>
+                            <div style={{ fontWeight: 600, fontSize: '13px' }}>{formatPrice(lot.buyoutPrice)}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ОСТАЛОСЬ</div>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-2)' }}>{timeLeft(lot.endTime)}</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
 
-            {/* History chart */}
+            {/* History */}
             {tab === 'history' && <PriceChart prices={filteredHistory} />}
           </>
         )}
@@ -305,18 +444,41 @@ export default function AuctionPage({ state, setState }) {
             <div style={{ fontSize: '12px', color: 'var(--text-3)', marginBottom: '20px' }}>
               {selectedItem?.name_ru} — уведомление когда цена ≤ лимита
             </div>
+
             {artifact && (
-              <div style={{ marginBottom: '16px' }}>
+              <>
                 <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '8px', letterSpacing: '0.08em' }}>РЕДКОСТЬ</div>
-                <QltFilter value={alertQlt} onChange={setAlertQlt} />
-              </div>
+                <div style={{ marginBottom: '16px' }}>
+                  <QltFilter value={alertQlt} onChange={setAlertQlt} />
+                </div>
+
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '8px', letterSpacing: '0.08em' }}>МИН. ЗАТОЧКА (необязательно)</div>
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', marginBottom: '16px' }}>
+                  <button onClick={() => setAlertPtn('')} style={{
+                    flexShrink: 0, padding: '4px 10px', background: 'transparent',
+                    border: `1px solid ${!alertPtn ? 'var(--text-2)' : 'var(--border)'}`,
+                    borderRadius: '20px', color: !alertPtn ? 'var(--text-2)' : 'var(--text-3)',
+                    fontSize: '11px', fontWeight: 600,
+                  }}>Любая</button>
+                  {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(p => (
+                    <button key={p} onClick={() => setAlertPtn(String(p))} style={{
+                      flexShrink: 0, padding: '4px 10px', background: 'transparent',
+                      border: `1px solid ${alertPtn === String(p) ? 'var(--accent)' : 'var(--border)'}`,
+                      borderRadius: '20px', color: alertPtn === String(p) ? 'var(--accent)' : 'var(--text-3)',
+                      fontSize: '11px', fontWeight: 600,
+                    }}>+{p}</button>
+                  ))}
+                </div>
+              </>
             )}
+
             <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input value={alertPrice} onChange={e => setAlertPrice(e.target.value)}
                 placeholder="Лимит цены..." type="number" autoFocus
                 style={{ flex: 1, background: 'transparent', border: 'none', padding: '14px 0', color: 'var(--text)', fontSize: '16px', fontWeight: 600 }} />
               <span style={{ color: 'var(--text-3)', fontSize: '14px' }}>₽</span>
             </div>
+
             <button onClick={saveAlert} disabled={alertSaving || !alertPrice} style={{
               width: '100%', padding: '14px',
               background: alertPrice ? 'var(--accent)' : 'var(--bg-4)',

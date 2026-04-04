@@ -26,6 +26,7 @@ export const api = {
   getLots: (itemId) => request('GET', `/auction/${itemId}/lots`),
   getHistory: (itemId) => request('GET', `/auction/${itemId}/history?limit=200`),
   getAlerts: () => request('GET', '/alerts'),
-  createAlert: (item_id, price_limit, qlt) => request('POST', '/alerts', { item_id, price_limit, qlt }),
+  createAlert: (item_id, price_limit, qlt, ptn_min) =>
+    request('POST', '/alerts', { item_id, price_limit, qlt: qlt ?? null, ptn_min: ptn_min ?? null }),
   deleteAlert: (id) => request('DELETE', `/alerts/${id}`),
 }
