@@ -1,5 +1,4 @@
 const BASE_URL = import.meta.env.VITE_API_URL || ''
-
 const tg = window.Telegram?.WebApp
 
 function getHeaders() {
@@ -27,6 +26,6 @@ export const api = {
   getLots: (itemId) => request('GET', `/auction/${itemId}/lots`),
   getHistory: (itemId) => request('GET', `/auction/${itemId}/history`),
   getAlerts: () => request('GET', '/alerts'),
-  createAlert: (item_id, price_limit) => request('POST', '/alerts', { item_id, price_limit }),
+  createAlert: (item_id, price_limit, qlt) => request('POST', '/alerts', { item_id, price_limit, qlt }),
   deleteAlert: (id) => request('DELETE', `/alerts/${id}`),
 }
