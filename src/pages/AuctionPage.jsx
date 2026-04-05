@@ -11,8 +11,16 @@ export const QLT = {
 }
 
 function formatPrice(n) {
-  if (n == null) return '—'
+  if (n == null || n === 0) return '—'
   return n.toLocaleString('ru-RU') + ' ₽'
+}
+
+function getLotPrice(lot) {
+  return lot.currentPrice || lot.buyoutPrice || lot.startPrice || null
+}
+
+function getLotBuyout(lot) {
+  return lot.buyoutPrice || null
 }
 
 function timeLeft(isoStr) {
@@ -96,14 +104,13 @@ function PriceChart({ prices }) {
           ))}
           <polygon points={polygon} fill="url(#cg)"/>
           <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
-          {pts.map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={tooltip === p ? 4 : 2.5}
-              fill={tooltip === p ? 'var(--accent)' : 'var(--bg-4)'}
-              stroke="var(--accent)" strokeWidth="1.5"/>
-          ))}
           {tooltip && (
-            <line x1={tooltip.x} y1={PAD} x2={tooltip.x} y2={H - PAD}
-              stroke="var(--accent)" strokeWidth="1" strokeDasharray="3,3" opacity="0.5"/>
+            <>
+              <line x1={tooltip.x} y1={PAD} x2={tooltip.x} y2={H - PAD}
+                stroke="var(--text-3)" strokeWidth="1" strokeDasharray="3,3" opacity="0.6"/>
+              <circle cx={tooltip.x} cy={tooltip.y} r={4}
+                fill="var(--accent)" stroke="var(--bg-4)" strokeWidth="2"/>
+            </>
           )}
         </svg>
         {tooltip && (
@@ -395,12 +402,12 @@ export default function AuctionPage({ state, setState }) {
                         )}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                           <div>
-                            <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ТЕКУЩАЯ</div>
-                            <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '13px' }}>{formatPrice(lot.currentPrice)}</div>
+                            <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>СТАВКА</div>
+                            <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '13px' }}>{formatPrice(getLotPrice(lot))}</div>
                           </div>
                           <div>
                             <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ВЫКУП</div>
-                            <div style={{ fontWeight: 600, fontSize: '13px' }}>{formatPrice(lot.buyoutPrice)}</div>
+                            <div style={{ fontWeight: 600, fontSize: '13px' }}>{getLotBuyout(lot) ? formatPrice(getLotBuyout(lot)) : '—'}</div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ОСТАЛОСЬ</div>
