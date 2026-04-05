@@ -52,14 +52,15 @@ function PriceChart({ prices }) {
     </div>
   )
 
-  const values = prices.map(p => p.price).filter(Boolean)
+  const sorted = [...prices].reverse() // oldest left, newest right
+  const values = sorted.map(p => p.price).filter(Boolean)
   const min = Math.min(...values)
   const max = Math.max(...values)
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
   const range = max - min || 1
   const W = 400, H = 130, PAD = 12
 
-  const pts = prices.map((p, i) => ({
+  const pts = sorted.map((p, i) => ({
     x: PAD + (i / (prices.length - 1)) * (W - PAD * 2),
     y: PAD + (1 - (p.price - min) / range) * (H - PAD * 2),
     price: p.price, time: p.time,
@@ -150,9 +151,9 @@ function PriceChart({ prices }) {
             )}
           </svg>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-3)', marginTop: '6px' }}>
-            <span>{prices[0]?.time ? new Date(prices[0].time).toLocaleDateString('ru-RU') : ''}</span>
-            <span>{prices.length} сделок</span>
-            <span>{prices[prices.length - 1]?.time ? new Date(prices[prices.length - 1].time).toLocaleDateString('ru-RU') : ''}</span>
+            <span>{sorted[0]?.time ? new Date(sorted[0].time).toLocaleDateString('ru-RU') : ''}</span>
+            <span>{sorted.length} сделок</span>
+            <span>{sorted[sorted.length - 1]?.time ? new Date(sorted[sorted.length - 1].time).toLocaleDateString('ru-RU') : ''}</span>
           </div>
         </div>
       </div>
