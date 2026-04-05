@@ -85,13 +85,17 @@ export default function AlertsPage({ onGoToItem }) {
                       )}
                     </div>
                   </div>
-                  <button onClick={() => onGoToItem({
+                  <button onClick={() => onGoToItem(
+                    {
                       id: alert.item_id,
                       name_ru: alert.name_ru,
                       name_en: alert.name_en,
                       icon_url: alert.icon_url,
                       category: alert.category,
-                    })} style={{
+                    },
+                    alert.qlt,
+                    alert.ptn_min,
+                  )} style={{
                     width: 32, height: 32, flexShrink: 0,
                     background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)',
                     borderRadius: '7px', color: 'var(--accent)',

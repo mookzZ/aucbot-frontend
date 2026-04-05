@@ -33,7 +33,7 @@ export default function App() {
 
   if (state === 'region') return <RegionSelect onDone={() => setState('ready')} />
 
-  function goToItem(item) {
+  function goToItem(item, qlt, filterPtn) {
     setAuctionState(prev => ({
       ...prev,
       query: item.name_ru || item.name_en,
@@ -41,7 +41,8 @@ export default function App() {
       lots: null,
       history: null,
       tab: 'lots',
-      qlt: null,
+      qlt: qlt ?? null,
+      _filterPtn: filterPtn ?? '',
     }))
     setTab('auction')
   }

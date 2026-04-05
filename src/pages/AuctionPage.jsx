@@ -201,7 +201,7 @@ export default function AuctionPage({ state, setState }) {
   const [alertSaving, setAlertSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [sortOrder, setSortOrder] = useState('asc')
-  const [filterPtn, setFilterPtn] = useState('')  // строгий матч, '' = любая
+  const [filterPtn, setFilterPtn] = useState(state._filterPtn ?? '')
   const searchTimeout = useRef(null)
 
   function update(patch) { setState(prev => ({ ...prev, ...patch })) }
@@ -211,6 +211,10 @@ export default function AuctionPage({ state, setState }) {
   useEffect(() => {
     if (selectedItem && !lots && !loading && selectedItem.id !== prevItemId.current) {
       prevItemId.current = selectedItem.id
+      // Apply _filterPtn from state if present
+      if (state._filterPtn !== undefined) {
+        setFilterPtn(state._filterPtn ?? '')
+      }
       setLoading(true)
       Promise.all([api.getLots(selectedItem.id), api.getHistory(selectedItem.id)])
         .then(([l, h]) => update({ lots: l, history: h }))
