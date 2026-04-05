@@ -32,7 +32,7 @@ function getPtn(lot) {
   return lot?.additional?.ptn ?? 0
 }
 
-// ── Chart with tooltip ───────────────────────────────────────────────────────
+// ── Chart ────────────────────────────────────────────────────────────────────
 
 function PriceChart({ prices }) {
   const [tooltip, setTooltip] = useState(null)
@@ -49,16 +49,13 @@ function PriceChart({ prices }) {
   const max = Math.max(...values)
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length)
   const range = max - min || 1
-
   const W = 400, H = 130, PAD = 12
 
   const pts = prices.map((p, i) => ({
     x: PAD + (i / (prices.length - 1)) * (W - PAD * 2),
     y: PAD + (1 - (p.price - min) / range) * (H - PAD * 2),
-    price: p.price,
-    time: p.time,
-    qlt: p.additional?.qlt,
-    ptn: p.additional?.ptn,
+    price: p.price, time: p.time,
+    qlt: p.additional?.qlt, ptn: p.additional?.ptn,
   }))
 
   const polyline = pts.map(p => `${p.x},${p.y}`).join(' ')
@@ -77,7 +74,6 @@ function PriceChart({ prices }) {
 
   return (
     <div>
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
         {[['МИН', min, 'var(--success)'], ['СРЕДНЕЕ', avg, 'var(--accent)'], ['МАКС', max, 'var(--danger)']].map(([label, value, color]) => (
           <div key={label} style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '7px', padding: '10px 8px', textAlign: 'center' }}>
@@ -86,8 +82,6 @@ function PriceChart({ prices }) {
           </div>
         ))}
       </div>
-
-      {/* SVG */}
       <div style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', position: 'relative' }}>
         <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', cursor: 'crosshair' }}
           onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
@@ -102,40 +96,29 @@ function PriceChart({ prices }) {
           ))}
           <polygon points={polygon} fill="url(#cg)"/>
           <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
-
-          {/* Dots */}
           {pts.map((p, i) => (
             <circle key={i} cx={p.x} cy={p.y} r={tooltip === p ? 4 : 2.5}
               fill={tooltip === p ? 'var(--accent)' : 'var(--bg-4)'}
               stroke="var(--accent)" strokeWidth="1.5"/>
           ))}
-
-          {/* Vertical line at tooltip */}
           {tooltip && (
             <line x1={tooltip.x} y1={PAD} x2={tooltip.x} y2={H - PAD}
               stroke="var(--accent)" strokeWidth="1" strokeDasharray="3,3" opacity="0.5"/>
           )}
         </svg>
-
-        {/* Tooltip */}
         {tooltip && (
           <div style={{
             position: 'absolute', top: '12px',
-            left: tooltip.x / W * 100 > 60 ? 'auto' : '50%',
+            left: tooltip.x / W * 100 > 60 ? 'auto' : '60px',
             right: tooltip.x / W * 100 > 60 ? '12px' : 'auto',
-            transform: tooltip.x / W * 100 > 60 ? 'none' : 'none',
             background: 'var(--bg-2)', border: '1px solid var(--border-bright)',
             borderRadius: '6px', padding: '8px 10px',
-            fontSize: '11px', lineHeight: '1.6', pointerEvents: 'none',
-            minWidth: '140px',
+            fontSize: '11px', lineHeight: '1.6', pointerEvents: 'none', minWidth: '150px',
           }}>
-            <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '2px' }}>
-              {formatPrice(tooltip.price)}
-            </div>
+            <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '2px' }}>{formatPrice(tooltip.price)}</div>
             {tooltip.qlt != null && QLT[tooltip.qlt] && (
               <div style={{ color: QLT[tooltip.qlt].color }}>
-                {QLT[tooltip.qlt].label}
-                {tooltip.ptn ? ` +${tooltip.ptn}` : ''}
+                {QLT[tooltip.qlt].label}{tooltip.ptn ? ` +${tooltip.ptn}` : ''}
               </div>
             )}
             {tooltip.time && (
@@ -145,7 +128,6 @@ function PriceChart({ prices }) {
             )}
           </div>
         )}
-
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-3)', marginTop: '6px' }}>
           <span>{prices[0]?.time ? new Date(prices[0].time).toLocaleDateString('ru-RU') : ''}</span>
           <span>{prices.length} сделок</span>
@@ -156,7 +138,7 @@ function PriceChart({ prices }) {
   )
 }
 
-// ── Quality Filter ───────────────────────────────────────────────────────────
+// ── Quality Filter ────────────────────────────────────────────────────────────
 
 function QltFilter({ value, onChange }) {
   return (
@@ -165,7 +147,7 @@ function QltFilter({ value, onChange }) {
         flexShrink: 0, padding: '4px 10px', background: 'transparent',
         border: `1px solid ${value === null ? 'var(--text-2)' : 'var(--border)'}`,
         borderRadius: '20px', color: value === null ? 'var(--text-2)' : 'var(--text-3)',
-        fontSize: '11px', fontWeight: 600, transition: 'all 0.15s',
+        fontSize: '11px', fontWeight: 600,
       }}>Все</button>
       {Object.entries(QLT).map(([k, { label, color }]) => {
         const active = value === Number(k)
@@ -195,8 +177,8 @@ export default function AuctionPage({ state, setState }) {
   const [alertPtn, setAlertPtn] = useState('')
   const [alertSaving, setAlertSaving] = useState(false)
   const [alertDone, setAlertDone] = useState(false)
-  const [sortOrder, setSortOrder] = useState('asc') // asc | desc
-  const [filterPtn, setFilterPtn] = useState(null) // null = any
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [filterPtn, setFilterPtn] = useState('')  // строгий матч, '' = любая
   const searchTimeout = useRef(null)
 
   function update(patch) { setState(prev => ({ ...prev, ...patch })) }
@@ -212,8 +194,9 @@ export default function AuctionPage({ state, setState }) {
 
   async function selectItem(item) {
     setResults([])
-    update({ query: item.name_ru || item.name_en, selectedItem: item, lots: null, history: null })
+    update({ query: item.name_ru || item.name_en, selectedItem: item, lots: null, history: null, qlt: null })
     setAlertDone(false)
+    setFilterPtn('')
     setLoading(true)
     try {
       const [l, h] = await Promise.all([api.getLots(item.id), api.getHistory(item.id)])
@@ -240,9 +223,16 @@ export default function AuctionPage({ state, setState }) {
   const artifact = isArtifact(selectedItem)
   const allLots = lots?.lots ?? []
 
-  // Filter
-  let filteredLots = qlt !== null ? allLots.filter(l => l.additional?.qlt === qlt) : allLots
-  if (filterPtn !== null) filteredLots = filteredLots.filter(l => getPtn(l) >= filterPtn)
+  // Filter lots
+  let filteredLots = artifact && qlt !== null
+    ? allLots.filter(l => l.additional?.qlt === qlt)
+    : allLots
+
+  // Strict ptn match for lots display
+  if (artifact && filterPtn !== '') {
+    const ptnNum = parseInt(filterPtn)
+    if (!isNaN(ptnNum)) filteredLots = filteredLots.filter(l => getPtn(l) === ptnNum)
+  }
 
   // Sort
   filteredLots = [...filteredLots].sort((a, b) => {
@@ -252,12 +242,9 @@ export default function AuctionPage({ state, setState }) {
   })
 
   const allHistory = history?.prices ?? []
-  const filteredHistory = qlt !== null ? allHistory.filter(p => p.additional?.qlt === qlt) : allHistory
-
-  // Available ptn values for filter
-  const availablePtns = artifact
-    ? [...new Set(allLots.map(l => getPtn(l)))].sort((a, b) => a - b)
-    : []
+  const filteredHistory = artifact && qlt !== null
+    ? allHistory.filter(p => p.additional?.qlt === qlt)
+    : allHistory
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
@@ -334,26 +321,6 @@ export default function AuctionPage({ state, setState }) {
             {artifact && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                 <QltFilter value={qlt} onChange={v => update({ qlt: v })} />
-
-                {/* Ptn filter */}
-                {availablePtns.length > 1 && (
-                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-                    <button onClick={() => setFilterPtn(null)} style={{
-                      flexShrink: 0, padding: '4px 10px', background: 'transparent',
-                      border: `1px solid ${filterPtn === null ? 'var(--text-2)' : 'var(--border)'}`,
-                      borderRadius: '20px', color: filterPtn === null ? 'var(--text-2)' : 'var(--text-3)',
-                      fontSize: '11px', fontWeight: 600,
-                    }}>Любая +</button>
-                    {availablePtns.filter(p => p > 0).map(p => (
-                      <button key={p} onClick={() => setFilterPtn(p)} style={{
-                        flexShrink: 0, padding: '4px 10px', background: 'transparent',
-                        border: `1px solid ${filterPtn === p ? 'var(--accent)' : 'var(--border)'}`,
-                        borderRadius: '20px', color: filterPtn === p ? 'var(--accent)' : 'var(--text-3)',
-                        fontSize: '11px', fontWeight: 600,
-                      }}>+{p}</button>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
@@ -373,18 +340,38 @@ export default function AuctionPage({ state, setState }) {
             {/* Lots */}
             {tab === 'lots' && (
               <>
-                {/* Sort controls */}
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>
+                {/* Controls row */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-3)', flexShrink: 0 }}>
                     {filteredLots.length} лотов
                   </span>
+
+                  {/* Ptn input — only for artifacts */}
+                  {artifact && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '0 10px', height: '30px', width: '90px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-3)', flexShrink: 0 }}>+</span>
+                      <input
+                        value={filterPtn}
+                        onChange={e => {
+                          const v = e.target.value.replace(/\D/g, '')
+                          setFilterPtn(v === '' ? '' : String(Math.min(15, parseInt(v))))
+                        }}
+                        placeholder="Любая"
+                        style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '12px', fontWeight: 600 }}
+                      />
+                      {filterPtn && (
+                        <button onClick={() => setFilterPtn('')} style={{ background: 'none', color: 'var(--text-3)', fontSize: '14px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                      )}
+                    </div>
+                  )}
+
                   <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
-                    {[['asc', '↑ Дешевле'], ['desc', '↓ Дороже']].map(([val, label]) => (
+                    {[['asc', '↑'], ['desc', '↓']].map(([val, label]) => (
                       <button key={val} onClick={() => setSortOrder(val)} style={{
-                        padding: '4px 10px', background: 'transparent',
+                        width: 30, height: 30, background: 'transparent',
                         border: `1px solid ${sortOrder === val ? 'var(--accent)' : 'var(--border)'}`,
                         borderRadius: '6px', color: sortOrder === val ? 'var(--accent)' : 'var(--text-3)',
-                        fontSize: '11px', fontWeight: 600,
+                        fontSize: '14px', fontWeight: 700,
                       }}>{label}</button>
                     ))}
                   </div>
@@ -392,9 +379,7 @@ export default function AuctionPage({ state, setState }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {filteredLots.length === 0 && (
-                    <div style={{ textAlign: 'center', color: 'var(--text-3)', paddingTop: '24px', fontSize: '13px' }}>
-                      Нет лотов
-                    </div>
+                    <div style={{ textAlign: 'center', color: 'var(--text-3)', paddingTop: '24px', fontSize: '13px' }}>Нет лотов</div>
                   )}
                   {filteredLots.map((lot, i) => {
                     const lotQlt = lot.additional?.qlt
@@ -402,7 +387,7 @@ export default function AuctionPage({ state, setState }) {
                     const qi = QLT[lotQlt]
                     return (
                       <div key={i} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px 14px' }}>
-                        {artifact && (
+                        {artifact && (qi || lotPtn > 0) && (
                           <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
                             {qi && <span style={{ fontSize: '10px', fontWeight: 700, color: qi.color, letterSpacing: '0.08em' }}>{qi.label.toUpperCase()}</span>}
                             {lotPtn > 0 && <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '1px 6px' }}>+{lotPtn}</span>}
@@ -429,7 +414,6 @@ export default function AuctionPage({ state, setState }) {
               </>
             )}
 
-            {/* History */}
             {tab === 'history' && <PriceChart prices={filteredHistory} />}
           </>
         )}
@@ -452,22 +436,18 @@ export default function AuctionPage({ state, setState }) {
                   <QltFilter value={alertQlt} onChange={setAlertQlt} />
                 </div>
 
-                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '8px', letterSpacing: '0.08em' }}>МИН. ЗАТОЧКА (необязательно)</div>
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', scrollbarWidth: 'none', marginBottom: '16px' }}>
-                  <button onClick={() => setAlertPtn('')} style={{
-                    flexShrink: 0, padding: '4px 10px', background: 'transparent',
-                    border: `1px solid ${!alertPtn ? 'var(--text-2)' : 'var(--border)'}`,
-                    borderRadius: '20px', color: !alertPtn ? 'var(--text-2)' : 'var(--text-3)',
-                    fontSize: '11px', fontWeight: 600,
-                  }}>Любая</button>
-                  {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(p => (
-                    <button key={p} onClick={() => setAlertPtn(String(p))} style={{
-                      flexShrink: 0, padding: '4px 10px', background: 'transparent',
-                      border: `1px solid ${alertPtn === String(p) ? 'var(--accent)' : 'var(--border)'}`,
-                      borderRadius: '20px', color: alertPtn === String(p) ? 'var(--accent)' : 'var(--text-3)',
-                      fontSize: '11px', fontWeight: 600,
-                    }}>+{p}</button>
-                  ))}
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginBottom: '8px', letterSpacing: '0.08em' }}>МИН. ЗАТОЧКА (не менее чем)</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0 14px', marginBottom: '16px', height: '48px' }}>
+                  <span style={{ color: 'var(--text-3)', fontSize: '16px', fontWeight: 700 }}>+</span>
+                  <input
+                    value={alertPtn}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '')
+                      setAlertPtn(v === '' ? '' : String(Math.min(15, parseInt(v))))
+                    }}
+                    placeholder="Любая заточка"
+                    style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text)', fontSize: '15px', fontWeight: 600 }}
+                  />
                 </div>
               </>
             )}
