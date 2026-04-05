@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useEffect } from 'react'
 import { api } from '../api/client'
 
 export const QLT = {
@@ -205,6 +205,19 @@ export default function AuctionPage({ state, setState }) {
   const searchTimeout = useRef(null)
 
   function update(patch) { setState(prev => ({ ...prev, ...patch })) }
+
+  // Auto-load lots when item is set externally (e.g. from alerts page)
+  const prevItemId = useRef(null)
+  useEffect(() => {
+    if (selectedItem && !lots && !loading && selectedItem.id !== prevItemId.current) {
+      prevItemId.current = selectedItem.id
+      setLoading(true)
+      Promise.all([api.getLots(selectedItem.id), api.getHistory(selectedItem.id)])
+        .then(([l, h]) => update({ lots: l, history: h }))
+        .catch(console.error)
+        .finally(() => setLoading(false))
+    }
+  }, [selectedItem, lots])
 
   const search = useCallback((q) => {
     clearTimeout(searchTimeout.current)
