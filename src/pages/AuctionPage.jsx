@@ -80,6 +80,8 @@ function PriceChart({ prices }) {
     setTooltip(closest)
   }
 
+  const tooltipQlt = tooltip?.qlt != null ? QLT[tooltip.qlt] : null
+
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
@@ -90,55 +92,68 @@ function PriceChart({ prices }) {
           </div>
         ))}
       </div>
-      <div style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', position: 'relative' }}>
-        <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', cursor: 'crosshair' }}
-          onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
-          <defs>
-            <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25"/>
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
-            </linearGradient>
-          </defs>
-          {[0.25, 0.5, 0.75].map(t => (
-            <line key={t} x1={PAD} y1={PAD + t * (H - PAD * 2)} x2={W - PAD} y2={PAD + t * (H - PAD * 2)} stroke="var(--border)" strokeWidth="1"/>
-          ))}
-          <polygon points={polygon} fill="url(#cg)"/>
-          <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
-          {tooltip && (
+
+      <div style={{ background: 'var(--bg-4)', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
+        {/* Info panel above chart */}
+        <div style={{
+          height: '52px', padding: '0 14px',
+          display: 'flex', alignItems: 'center', gap: '16px',
+          borderBottom: '1px solid var(--border)',
+          background: tooltip ? 'var(--bg-3)' : 'transparent',
+          transition: 'background 0.15s',
+        }}>
+          {tooltip ? (
             <>
-              <line x1={tooltip.x} y1={PAD} x2={tooltip.x} y2={H - PAD}
-                stroke="var(--text-3)" strokeWidth="1" strokeDasharray="3,3" opacity="0.6"/>
-              <circle cx={tooltip.x} cy={tooltip.y} r={4}
-                fill="var(--accent)" stroke="var(--bg-4)" strokeWidth="2"/>
+              <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '14px' }}>
+                {formatPrice(tooltip.price)}
+              </div>
+              {tooltipQlt && (
+                <div style={{ fontSize: '12px', fontWeight: 600, color: tooltipQlt.color }}>
+                  {tooltipQlt.label}{tooltip.ptn ? ` +${tooltip.ptn}` : ''}
+                </div>
+              )}
+              {tooltip.time && (
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', marginLeft: 'auto' }}>
+                  {new Date(tooltip.time).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                </div>
+              )}
             </>
+          ) : (
+            <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>
+              Наведи на график для просмотра сделки
+            </div>
           )}
-        </svg>
-        {tooltip && (
-          <div style={{
-            position: 'absolute', top: '12px',
-            left: tooltip.x / W * 100 > 60 ? 'auto' : '60px',
-            right: tooltip.x / W * 100 > 60 ? '12px' : 'auto',
-            background: 'var(--bg-2)', border: '1px solid var(--border-bright)',
-            borderRadius: '6px', padding: '8px 10px',
-            fontSize: '11px', lineHeight: '1.6', pointerEvents: 'none', minWidth: '150px',
-          }}>
-            <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: '2px' }}>{formatPrice(tooltip.price)}</div>
-            {tooltip.qlt != null && QLT[tooltip.qlt] && (
-              <div style={{ color: QLT[tooltip.qlt].color }}>
-                {QLT[tooltip.qlt].label}{tooltip.ptn ? ` +${tooltip.ptn}` : ''}
-              </div>
+        </div>
+
+        {/* Chart */}
+        <div style={{ padding: '12px' }}>
+          <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', cursor: 'crosshair' }}
+            onMouseMove={handleMouseMove} onMouseLeave={() => setTooltip(null)}>
+            <defs>
+              <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.25"/>
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            {[0.25, 0.5, 0.75].map(t => (
+              <line key={t} x1={PAD} y1={PAD + t * (H - PAD * 2)} x2={W - PAD} y2={PAD + t * (H - PAD * 2)} stroke="var(--border)" strokeWidth="1"/>
+            ))}
+            <polygon points={polygon} fill="url(#cg)"/>
+            <polyline points={polyline} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
+            {tooltip && (
+              <>
+                <line x1={tooltip.x} y1={PAD} x2={tooltip.x} y2={H - PAD}
+                  stroke="var(--text-3)" strokeWidth="1" strokeDasharray="3,3" opacity="0.6"/>
+                <circle cx={tooltip.x} cy={tooltip.y} r={4}
+                  fill="var(--accent)" stroke="var(--bg-4)" strokeWidth="2"/>
+              </>
             )}
-            {tooltip.time && (
-              <div style={{ color: 'var(--text-3)' }}>
-                {new Date(tooltip.time).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
-              </div>
-            )}
+          </svg>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-3)', marginTop: '6px' }}>
+            <span>{prices[0]?.time ? new Date(prices[0].time).toLocaleDateString('ru-RU') : ''}</span>
+            <span>{prices.length} сделок</span>
+            <span>{prices[prices.length - 1]?.time ? new Date(prices[prices.length - 1].time).toLocaleDateString('ru-RU') : ''}</span>
           </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-3)', marginTop: '6px' }}>
-          <span>{prices[0]?.time ? new Date(prices[0].time).toLocaleDateString('ru-RU') : ''}</span>
-          <span>{prices.length} сделок</span>
-          <span>{prices[prices.length - 1]?.time ? new Date(prices[prices.length - 1].time).toLocaleDateString('ru-RU') : ''}</span>
         </div>
       </div>
     </div>
