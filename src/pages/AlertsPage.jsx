@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 import { QLT } from './AuctionPage'
 
-export default function AlertsPage() {
+export default function AlertsPage({ onGoToItem }) {
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(null)
@@ -85,6 +85,22 @@ export default function AlertsPage() {
                       )}
                     </div>
                   </div>
+                  <button onClick={() => onGoToItem({
+                      id: alert.item_id,
+                      name_ru: alert.name_ru,
+                      name_en: alert.name_en,
+                      icon_url: alert.icon_url,
+                      category: alert.category,
+                    })} style={{
+                    width: 32, height: 32, flexShrink: 0,
+                    background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)',
+                    borderRadius: '7px', color: 'var(--accent)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                  </button>
                   <button onClick={() => remove(alert.id)} disabled={deleting === alert.id} style={{
                     width: 32, height: 32, flexShrink: 0,
                     background: 'var(--danger-dim)', border: '1px solid var(--danger)',

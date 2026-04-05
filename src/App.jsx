@@ -33,6 +33,19 @@ export default function App() {
 
   if (state === 'region') return <RegionSelect onDone={() => setState('ready')} />
 
+  function goToItem(item) {
+    setAuctionState(prev => ({
+      ...prev,
+      query: item.name_ru || item.name_en,
+      selectedItem: item,
+      lots: null,
+      history: null,
+      tab: 'lots',
+      qlt: null,
+    }))
+    setTab('auction')
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -40,7 +53,7 @@ export default function App() {
           <AuctionPage state={auctionState} setState={setAuctionState} />
         </div>
         <div style={{ display: tab === 'alerts' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
-          <AlertsPage key={tab === 'alerts' ? 'visible' : 'hidden'} />
+          <AlertsPage key={tab === 'alerts' ? 'visible' : 'hidden'} onGoToItem={goToItem} />
         </div>
       </div>
       <NavBar active={tab} onChange={setTab} />
