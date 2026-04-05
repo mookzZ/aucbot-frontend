@@ -209,7 +209,7 @@ export default function AuctionPage({ state, setState }) {
   // Auto-load lots when item is set externally (e.g. from alerts page)
   const prevItemId = useRef(null)
   useEffect(() => {
-    if (selectedItem && !lots && !loading && selectedItem.id !== prevItemId.current) {
+    if (selectedItem && !lots && !loading) {
       prevItemId.current = selectedItem.id
       // Apply _filterPtn from state if present
       if (state._filterPtn !== undefined) {
@@ -234,6 +234,7 @@ export default function AuctionPage({ state, setState }) {
 
   async function selectItem(item) {
     setResults([])
+    prevItemId.current = null
     update({ query: item.name_ru || item.name_en, selectedItem: item, lots: null, history: null, qlt: null })
     setFilterPtn('')
     setLoading(true)
@@ -436,11 +437,13 @@ export default function AuctionPage({ state, setState }) {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                           <div>
                             <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>СТАВКА</div>
-                            <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '13px' }}>{formatPrice(getLotPrice(lot))}</div>
+                            <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '13px' }}>
+                              {lot.currentPrice > 0 ? formatPrice(lot.currentPrice) : '—'}
+                            </div>
                           </div>
                           <div>
                             <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ВЫКУП</div>
-                            <div style={{ fontWeight: 600, fontSize: '13px' }}>{getLotBuyout(lot) ? formatPrice(getLotBuyout(lot)) : '—'}</div>
+                            <div style={{ fontWeight: 600, fontSize: '13px' }}>{lot.buyoutPrice > 0 ? formatPrice(lot.buyoutPrice) : '—'}</div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '9px', color: 'var(--text-3)', marginBottom: '2px', letterSpacing: '0.08em' }}>ОСТАЛОСЬ</div>
