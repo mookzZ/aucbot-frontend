@@ -199,7 +199,7 @@ export default function AuctionPage({ state, setState }) {
   const [alertQlt, setAlertQlt] = useState(null)
   const [alertPtn, setAlertPtn] = useState('')
   const [alertSaving, setAlertSaving] = useState(false)
-  const [alertDone, setAlertDone] = useState(false)
+  const [toast, setToast] = useState(null)
   const [sortOrder, setSortOrder] = useState('asc')
   const [filterPtn, setFilterPtn] = useState('')  // строгий матч, '' = любая
   const searchTimeout = useRef(null)
@@ -218,7 +218,6 @@ export default function AuctionPage({ state, setState }) {
   async function selectItem(item) {
     setResults([])
     update({ query: item.name_ru || item.name_en, selectedItem: item, lots: null, history: null, qlt: null })
-    setAlertDone(false)
     setFilterPtn('')
     setLoading(true)
     try {
@@ -235,10 +234,11 @@ export default function AuctionPage({ state, setState }) {
     try {
       const ptn_min = alertPtn ? parseInt(alertPtn) : null
       await api.createAlert(selectedItem.id, price, alertQlt, ptn_min)
-      setAlertDone(true)
       setAlertModal(false)
       setAlertPrice('')
       setAlertPtn('')
+      setToast({ text: `Алерт создан`, sub: 'Перейди во вкладку Алерты' })
+      setTimeout(() => setToast(null), 3000)
     } catch (e) { console.error(e) }
     finally { setAlertSaving(false) }
   }
@@ -328,15 +328,15 @@ export default function AuctionPage({ state, setState }) {
                 <div style={{ fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedItem.name_ru}</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{selectedItem.name_en} · {selectedItem.id}</div>
               </div>
-              <button onClick={() => { setAlertModal(true); setAlertQlt(qlt); setAlertDone(false) }} style={{
+              <button onClick={() => { setAlertModal(true); setAlertQlt(qlt) }} style={{
                 flexShrink: 0,
-                background: alertDone ? 'var(--success-dim)' : 'var(--accent-dim)',
-                border: `1px solid ${alertDone ? 'var(--success)' : 'var(--accent)'}`,
+                background: 'var(--accent-dim)',
+                border: '1px solid var(--accent)',
                 borderRadius: '7px', padding: '8px 12px',
-                color: alertDone ? 'var(--success)' : 'var(--accent)',
+                color: 'var(--accent)',
                 fontSize: '11px', fontWeight: 700,
               }}>
-                {alertDone ? '✓ АЛЕРТ' : '+ АЛЕРТ'}
+                + АЛЕРТ
               </button>
             </div>
 
@@ -441,6 +441,26 @@ export default function AuctionPage({ state, setState }) {
           </>
         )}
       </div>
+
+      {/* Toast notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 'calc(var(--nav-h) + 12px)', left: '16px', right: '16px',
+          background: 'var(--bg-2)', border: '1px solid var(--success)',
+          borderRadius: '10px', padding: '12px 16px', zIndex: 300,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', gap: '12px',
+          animation: 'slideUp 0.2s ease',
+        }}>
+          <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }`}</style>
+          <span style={{ fontSize: '18px' }}>✅</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--success)' }}>{toast.text}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{toast.sub}</div>
+          </div>
+          <button onClick={() => setToast(null)} style={{ background: 'none', color: 'var(--text-3)', fontSize: '16px' }}>×</button>
+        </div>
+      )}
 
       {/* Alert modal */}
       {alertModal && (

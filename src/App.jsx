@@ -40,7 +40,7 @@ export default function App() {
           <AuctionPage state={auctionState} setState={setAuctionState} />
         </div>
         <div style={{ display: tab === 'alerts' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
-          <AlertsPage />
+          <AlertsPage key={tab === 'alerts' ? 'visible' : 'hidden'} />
         </div>
       </div>
       <NavBar active={tab} onChange={setTab} />
