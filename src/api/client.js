@@ -30,4 +30,6 @@ export const api = {
   createAlert: (item_id, price_limit, qlt, ptn_min) =>
     request('POST', '/alerts', { item_id, price_limit, qlt: qlt ?? null, ptn_min: ptn_min ?? null }),
   deleteAlert: (id) => request('DELETE', `/alerts/${id}`),
+  searchClans: (q, region = 'ru') => request('GET', `/clans/search?q=${encodeURIComponent(q)}&region=${region}`),
+  getClanHistory: (id, limit = 50) => request('GET', `/clans/${id}/history?limit=${limit}`),
 }

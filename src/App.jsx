@@ -3,20 +3,20 @@ import { api } from './api/client'
 import RegionSelect from './pages/RegionSelect'
 import AuctionPage from './pages/AuctionPage'
 import AlertsPage from './pages/AlertsPage'
+import ClansPage from './pages/ClansPage'
 import NavBar from './components/NavBar'
 
 export default function App() {
   const [state, setState] = useState('loading')
   const [tab, setTab] = useState('auction')
 
-  // Auction state lifted here to persist across tab switches
   const [auctionState, setAuctionState] = useState({
     query: '',
     selectedItem: null,
     lots: null,
     history: null,
     tab: 'lots',
-    qlt: 0, // 0 = all
+    qlt: 0,
   })
 
   useEffect(() => {
@@ -52,6 +52,9 @@ export default function App() {
       <div style={{ flex: 1, overflow: 'hidden' }}>
         <div style={{ display: tab === 'auction' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <AuctionPage state={auctionState} setState={setAuctionState} />
+        </div>
+        <div style={{ display: tab === 'clans' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+          <ClansPage key={tab === 'clans' ? 'visible' : 'hidden'} />
         </div>
         <div style={{ display: tab === 'alerts' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <AlertsPage key={tab === 'alerts' ? 'visible' : 'hidden'} onGoToItem={goToItem} />
