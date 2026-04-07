@@ -79,11 +79,14 @@ function ClanSearch({ onSelect }) {
                 <div style={{ fontWeight: 700, fontSize: '13px', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {clan.name}
                 </div>
-                {clan.tag && (
-                  <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '2px 7px', flexShrink: 0 }}>
-                    {clan.tag}
-                  </span>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <span style={{ fontSize: '10px', color: 'var(--text-3)', fontFamily: 'monospace' }}>#{clan.id}</span>
+                  {clan.tag && (
+                    <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '2px 7px' }}>
+                      {clan.tag}
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
                 {clan.alliance && <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>Альянс: <span style={{ color: 'var(--text-2)' }}>{clan.alliance}</span></span>}
@@ -129,11 +132,14 @@ function ClanProfile({ clan, onBack }) {
         <span style={{ fontWeight: 700, fontSize: '14px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {clan.name}
         </span>
-        {clan.tag && (
-          <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '2px 7px', flexShrink: 0 }}>
-            {clan.tag}
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-3)', fontFamily: 'monospace' }}>#{clan.id}</span>
+          {clan.tag && (
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--accent)', background: 'var(--accent-dim2)', border: '1px solid var(--accent-dim)', borderRadius: '4px', padding: '2px 7px' }}>
+              {clan.tag}
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 16px' }}>
